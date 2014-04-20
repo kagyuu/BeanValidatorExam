@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <title>Start Page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" type="text/css" href="css/tooltipster.css" />
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
+        <script type="text/javascript" src="js/jquery.tooltipster.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+
+                // Set the default value of payDate.
+                var tomorrow = new Date(new Date().getTime() + 86400000);
+                var year = ('000' + tomorrow.getFullYear()).slice(-4);
+                var month = ('0' + (tomorrow.getMonth() + 1)).slice(-2);
+                var date = ('0' + (tomorrow.getDate())).slice(-2);
+                $('#payDate').val(year + '-' + month + '-' + date);
+
+                $('#frmValidate').on('submit', function() {
+                    // form -> [{name:xxx, value:yyy},{name:ppp, value:qqq},...]
+                    var params = $(this).serializeArray();
+                    // -> {xxx:yyy, ppp:qqq, ...}
+                    var args = new Object();
+                    for (var cnt = 0; cnt < params.length; cnt++) {
+                        args[ params[cnt].name ] = params[cnt].value;
+                    }
+
+                    // turn warings off
+                    $(this).find('input').each(function(index, element) {
+                        $(element).css({background: 'white'});
+                        // tooltipstar throw exception if ui-component is not initialized as tooltipstar component.
+                        try { $(element).tooltipster('destroy'); } catch (e) {}
+                    });
+
+                    $.ajax({
+                        url: "webresources/exam/order",
+                        type: "POST",
+                        data: JSON.stringify(args),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function(data) {
+                            if (data.success) {
+                                alert('Your order is accepted.');
+                                return;
+                            }
+
+                            var violations = data.errors.entry;
+                            for (var cnt = 0; cnt < violations.length; cnt++) {
+                                var violation = violations[cnt];
+                                var $component = $('#' + violation.key);
+                                // turn warings on
+                                if ($component) {
+                                    $component.css({background: 'pink'});
+                                    $component.tooltipster({postion:'top', content: violation.value}).tooltipster('show');
+                                }
+                            }
+                        },
+                        error: function(data, status) {
+                            console.log(data);
+                            console.log(status);
+                            alert('Sorry, your order is abended.');
+                        }
+                    });
+
+                    // reject from submit, we want to use ajax.
+                    return false;
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h1>Hello Bean Validator!</h1>
+        <form id="frmValidate">
+            <table>
+                <tbody>
+                    <tr> <td>Item</td>     <td> <input id="item" name="item" type="text" value="ニコニコ証券"/> </td> </tr>
+                    <tr> <td>Code</td>     <td> <input id="code" name="code" type="text" value="9876.T"/> </td> </tr>
+                    <tr> <td>Price</td>    <td> <input id="price" name="price" type="text" value="123.45"/> </td> </tr>
+                    <tr> <td>Amount</td>   <td> <input id="amount" name="amount" type="text" value="450"/> </td> </tr>
+                    <tr> <td>Pay Date</td> <td> <input id="payDate" name="payDateString" type="date"/> </td> </tr>
+                    <tr> <td colspan="2" align="left">
+                            <input id="agree" name="agree" type="checkbox" value="true"/> 
+                            <label for="agree">I Agree</label>
+                    </td></tr>
+                    <tr> <td colspan="2" align="right">
+                            <button id="btnOrder">Order</button>
+                    </td></tr>
+                </tbody>
+            </table>
+        </form>
+    </body>
+</html>

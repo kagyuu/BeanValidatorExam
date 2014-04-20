@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <title>Start Page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" type="text/css" href="css/tooltipster.css" />
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
+        <script type="text/javascript" src="js/jquery.tooltipster.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+
+                $('#frmValidate').on('submit', function() {
+                    // form -> [{name:xxx, value:yyy},{name:ppp, value:qqq},...]
+                    var params = $(this).serializeArray();
+                    // -> {xxx:yyy, ppp:qqq, ...}
+                    var args = new Object();
+                    for (var cnt = 0; cnt < params.length; cnt++) {
+                        args[ params[cnt].name ] = params[cnt].value;
+                    }
+
+                    // turn warings off
+                    $(this).find('input').each(function(index, element) {
+                        $(element).css({background: 'white'});
+                        // tooltipstar throw exception if ui-component is not initialized as tooltipstar component.
+                        try {
+                            $(element).tooltipster('destroy');
+                        } catch (e) {
+                        }
+                    });
+                    
+                    $.ajax({
+                        url: "webresources/exam/pay",
+                        type: "POST",
+                        data: JSON.stringify(args),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function(data) {
+                            if (data.success) {
+                                alert('Your order is accepted.');
+                                return;
+                            }
+
+                            var violations = data.errors.entry;
+                            for (var cnt = 0; cnt < violations.length; cnt++) {
+                                var violation = violations[cnt];
+                                var $component = $('#' + violation.key);
+                                // turn warings on
+                                if ($component) {
+                                    $component.css({background: 'pink'});
+                                    $component.tooltipster({postion: 'top', content: violation.value}).tooltipster('show');
+                                }
+                            }
+                        },
+                        error: function(data, status) {
+                            console.log(data);
+                            console.log(status);
+                            alert('Sorry, your order is abended.');
+                        }
+                    });
+
+                    // reject from submit, we want to use ajax.
+                    return false;
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h1>Hello Complex Bean Validator!</h1>
+        <form id="frmValidate">
+            <table>
+                <tbody>
+                    <tr> <td>Name</td>     <td> <input id="name" name="name" type="text" value="鬼太郎"/> </td> </tr>
+                    <tr> <td>Address</td>  <td> <input id="addr" name="addr" type="text" value="鳥取県境港市"/> </td> </tr>
+                    <tr> 
+                        <td valign="top">Payment<br/>Method</td>
+                        <td>
+                            <fieldset style="width:240px">
+                                <legend><label><input name="paymentMethod" value="creditCard" type="radio" checked="checked"/>Credit Card</label></legend>
+                                <select id="cardType" name="cardType">
+                                    <option>AMEX</option>
+                                    <option>VISA</option>
+                                    <option>JCB</option>
+                                </select>
+                                <table>
+                                    <tbody>
+                                        <tr><td>No</td>    <td><input id="cardNo" name="cardNo" type="text" value=""/></td>
+                                        <tr><td>Avail</td> <td><input id="cardAvail" name="cardAvail" type="month" value=""/></td>
+                                        <tr><td>Code</td>  <td><input id="cardCode" name="cardCode" type="text" value=""/></td>
+                                    </tbody>
+                                </table>
+                            </fieldset>
+                            <fieldset style="width:240px">
+                                <legend><label><label><input name="paymentMethod" value="bankTransfer" type="radio"/>Bank Transfer</label></legend>
+                                <select id="bankName" name="bankName">
+                                    <option>CITY</option>
+                                    <option>MIZUHO</option>
+                                    <option>JP-BANK</option>
+                                </select>
+                                <table>
+                                    <tbody>
+                                        <tr><td>No</td>      <td><input id="bankNo" name="bankNo" type="text" value=""/></td>
+                                        <tr><td>Nominal</td> <td><input id="bankNominal" name="bankNominal" type="text" value=""/></td>
+                                    </tbody>
+                                </table>
+                            </fieldset>
+                        </td>
+                    </tr>
+                    <tr> <td colspan="2" align="right">
+                            <button id="btnPay">Pay</button>
+                        </td></tr>
+                </tbody>
+            </table>
+        </form>
+    </body>
+</html>
